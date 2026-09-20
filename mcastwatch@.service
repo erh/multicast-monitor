@@ -1,0 +1,47 @@
+[Unit]
+Description=mcastwatch — multicast chatter monitor on %i
+Documentation=file:/usr/local/share/mcastwatch/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/mcastwatch \
+    -i %i \
+    -listen 0.0.0.0:8088 \
+    -state /var/lib/mcastwatch/state.json.gz \
+    -warn 0.5 \
+    -crit 2.0 \
+    -alert-cooldown 30m
+Restart=always
+RestartSec=5
+
+# Runs unprivileged. CAP_NET_RAW is all that's needed for the packet socket;
+# promiscuous mode via packet_mreq does not require CAP_NET_ADMIN.
+DynamicUser=yes
+AmbientCapabilities=CAP_NET_RAW
+CapabilityBoundingSet=CAP_NET_RAW
+NoNewPrivileges=yes
+
+StateDirectory=mcastwatch
+StateDirectoryMode=0750
+
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_PACKET AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+MemoryMax=256M
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

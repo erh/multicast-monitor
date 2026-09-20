@@ -1,0 +1,29 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: gofmt
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "needs gofmt: $unformatted"
+            exit 1
+          fi
+      - run: go vet ./...
+      - run: go test -race ./...
+      - name: cross-compile
+        run: |
+          for arch in amd64 arm64 arm; do
+            CGO_ENABLED=0 GOOS=linux GOARCH=$arch go build -o /dev/null .
+          done
